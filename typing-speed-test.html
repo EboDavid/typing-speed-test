@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="output.css">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <title>Typing Speed Test</title>
+</head>
+<body class="p-4 min-h-screen flex flex-col justify-between bg-black">
+    <div class="border-b ">
+        <div class="grid grid-cols-2 pb-8">
+            <div class="">
+                <p class="text-s text-white font-semibold"> Typing Speed Test</p>
+                <p class="text-xs text-black sm:text-gray-400 md:text-gray-400 lg:text-gray-400">Type as fast as you can in 60 seconds</p>
+            </div>
+        
+            <div class="">
+                <p style="font-size: 16px; color: gold; display: inline-block;">&#127942;</p>
+                <p class="inline-block text-xs text-gray-400 "> Personal best: <span id="pb-display" class="text-white font-semibold">0 WPM</span></p>
+            </div>
+        </div>
+    
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 mb-0">
+            <div class="grid grid-cols-3 mb-2">
+                <p class="text-sm text-gray-400">WPM: <span id="wpm-display" class="text-white font-semibold sm:text-l">0</span></p>
+                <p class="text-sm text-gray-400">Accuracy: <span id="acc-display" class="text-white font-semibold sm:text-l">100%</span></p>
+                <p class="text-sm text-gray-400">Time: <span id="time-display" class="text-white sm:text-l">60s</span></p>
+            </div>
+            
+            <div class="grid grid-cols-2 text-xs">
+                <div class="flex flex-col sm:flex-row md:flex-row lg:flex-row">
+                      <p class="inline-block grid text-gray-400">
+                          Difficulty:
+                      </p>
+                      <div class="inline-block">
+                        <button id="diff-easy" class="font-bold px-2 py-0.5 rounded text-indigo-400 bg-indigo-950/50">Easy</button> 
+                        <button id="diff-medium" class="font-bold px-2 py-0.5 rounded text-gray-500 hover:text-white transition-colors">Medium</button> 
+                        <button id="diff-hard" class="font-bold px-2 py-0.5 rounded text-gray-500 hover:text-white transition-colors">Hard</button>
+                      </div> 
+                </div>
+                
+                <div class="">
+                    <p class="text-gray-400">
+                        Mode: <button class="font-bold">Timed(60s)</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-gray-400 text-xl leading-relaxed tracking-wider font-mono select-none" id="word-container"></p>
+
+    <div class="text-gray-100 p-1 border-t text-center mb-4">
+        <button class="bg-black text-gray-100" id="restart-btn">Restart Test </button>
+    </div>  
+</body>
+
+<script type="module">
+/*
+import { generate } from 'https://cdn.jsdelivr.net/npm/random-words@2.0.1/+esm';
+
+    const words = generate(150);
+    const container = document.getElementById('word-container');
+
+    container.textContent = words.join(' ');
+*/
+
+import { generate } from 'https://cdn.jsdelivr.net/npm/random-words@2.0.1/+esm';
+
+const container = document.getElementById('word-container');
+const restartBtn = document.getElementById('restart-btn');
+const timeDisplay = document.getElementById('time-display');
+const wpmDisplay = document.getElementById('wpm-display');
+const accDisplay = document.getElementById('acc-display');
+const pbDisplay = document.getElementById('pb-display');
+
+// Difficulty Buttons
+const easyBtn = document.getElementById('diff-easy');
+const mediumBtn = document.getElementById('diff-medium');
+const hardBtn = document.getElementById('diff-hard');
+
+let passageText = "";
+let currentCharIndex = 0;
+
+// Config state
+let wordCount = 50; // Default: Easy (50 words)
+
+// Timer & Tracking Variables
+let timeLeft = 60;
+let timerInterval = null;
+let isTestActive = false; 
+let hasStarted = false;   
+
+// Metrics Counters
+let correctChars = 0;
+let totalKeystrokes = 0;
+let currentWpm = 0;
+
+// Personal Best Storage
+let personalBest = localStorage.getItem('typing_pb') ? parseInt(localStorage.getItem('typing_pb')) : 0;
+
+function updatePBDisplay() {
+  if (pbDisplay) {
+    pbDisplay.textContent = `${personalBest} WPM`;
+  }
+}
+
+// Update active styling on difficulty buttons
+function setActiveDifficultyButton(selectedBtn) {
+  const diffButtons = [easyBtn, mediumBtn, hardBtn];
+  diffButtons.forEach(btn => {
+    if (btn) {
+      btn.className = 'font-bold px-2 py-0.5 rounded text-gray-500 hover:text-white transition-colors';
+    }
+  });
+  if (selectedBtn) {
+    selectedBtn.className = 'font-bold px-2 py-0.5 rounded text-indigo-400 bg-indigo-950/50';
+  }
+}
+
+function loadPassage() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timeLeft = 60;
+  isTestActive = true;
+  hasStarted = false;
+  
+  // Reset Metrics
+  correctChars = 0;
+  totalKeystrokes = 0;
+  currentWpm = 0;
+
+  if (wpmDisplay) wpmDisplay.textContent = '0';
+  if (accDisplay) accDisplay.textContent = '100%';
+  if (timeDisplay) timeDisplay.textContent = `${timeLeft}s`;
+  
+  updatePBDisplay();
+  
+  container.classList.remove('opacity-30'); 
+  if (restartBtn) restartBtn.blur();
+
+  // Generate words dynamically based on active difficulty wordCount
+  const wordsArray = generate(wordCount);
+  passageText = wordsArray.join(' '); 
+
+  container.innerHTML = '';
+  currentCharIndex = 0;
+
+  passageText.split('').forEach((char, index) => {
+    const span = document.createElement('span');
+    span.textContent = char;
+    
+    if (index === 0) {
+      span.className = 'underline decoration-2 decoration-indigo-500 font-bold text-white';
+    }
+    
+    container.appendChild(span);
+  });
+}
+
+function startTimer() {
+  hasStarted = true;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeDisplay) timeDisplay.textContent = `${timeLeft}s`;
+
+    calculateMetrics();
+
+    if (timeLeft <= 0) {
+      endTest();
+    }
+  }, 1000);
+}
+
+function calculateMetrics() {
+  const timeElapsedInMinutes = (60 - timeLeft) / 60;
+
+  if (timeElapsedInMinutes > 0) {
+    currentWpm = Math.round((correctChars / 5) / timeElapsedInMinutes);
+    if (wpmDisplay) wpmDisplay.textContent = currentWpm;
+  }
+
+  if (totalKeystrokes > 0) {
+    const accuracy = Math.round((correctChars / totalKeystrokes) * 100);
+    if (accDisplay) accDisplay.textContent = `${accuracy}%`;
+  }
+}
+
+function endTest() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  isTestActive = false; 
+  
+  calculateMetrics();
+  
+  if (currentWpm > personalBest) {
+    personalBest = currentWpm;
+    localStorage.setItem('typing_pb', personalBest);
+    updatePBDisplay();
+    
+    if (wpmDisplay) {
+      wpmDisplay.classList.add('text-yellow-400');
+    }
+  }
+  
+  container.classList.add('opacity-30', 'transition-opacity', 'duration-500'); 
+}
+
+// Event Listeners for Difficulty Buttons
+if (easyBtn) {
+  easyBtn.addEventListener('click', () => {
+    wordCount = 50;
+    setActiveDifficultyButton(easyBtn);
+    loadPassage();
+  });
+}
+
+if (mediumBtn) {
+  mediumBtn.addEventListener('click', () => {
+    wordCount = 100;
+    setActiveDifficultyButton(mediumBtn);
+    loadPassage();
+  });
+}
+
+if (hardBtn) {
+  hardBtn.addEventListener('click', () => {
+    wordCount = 150;
+    setActiveDifficultyButton(hardBtn);
+    loadPassage();
+  });
+}
+
+// Main Keydown Event Listener
+document.addEventListener('keydown', (e) => {
+  if (!isTestActive) return;
+
+  const spans = container.querySelectorAll('span');
+  if (spans.length === 0) return;
+
+  if (e.key === ' ' || e.key === 'Backspace') {
+    e.preventDefault();
+  }
+
+  if (e.key.length > 1) return;
+
+  if (!hasStarted) {
+    startTimer();
+  }
+
+  if (currentCharIndex >= spans.length) return;
+
+  const expectedChar = passageText[currentCharIndex];
+
+  if (expectedChar === ' ' && e.key !== ' ') {
+    spans[currentCharIndex].className = 'bg-red-500/40 text-red-300 underline decoration-2 decoration-red-500';
+    return; 
+  }
+
+  totalKeystrokes++;
+
+  if (e.key === expectedChar) {
+    spans[currentCharIndex].className = 'text-green-400 font-medium';
+    correctChars++;
+  } else {
+    spans[currentCharIndex].className = 'text-red-500 bg-red-950/50 rounded font-medium';
+  }
+
+  calculateMetrics();
+
+  currentCharIndex++;
+
+  if (currentCharIndex < spans.length) {
+    spans[currentCharIndex].classList.add('underline', 'decoration-2', 'decoration-indigo-500', 'text-white');
+  }
+});
+
+if (restartBtn) {
+  restartBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (wpmDisplay) wpmDisplay.classList.remove('text-yellow-400');
+    loadPassage();
+  });
+}
+
+loadPassage();
+</script>
