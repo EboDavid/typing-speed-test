@@ -52,16 +52,17 @@
     
     <p class="text-gray-400 text-xl leading-relaxed tracking-wider font-mono select-none" id="word-container"></p>
 
+    <!-- Fixed position prevents screen jumping on mobile soft keyboards -->
     <input 
       type="text" 
       id="mobile-input" 
-      class="opacity-0 absolute -z-10 pointer-events-none text-base" 
+      class="fixed top-0 left-0 opacity-0 w-full h-12 pointer-events-none text-base z-0" 
       autocomplete="off" 
       autocorrect="off" 
       autocapitalize="off" 
       spellcheck="false" 
     />
-    
+
     <div class="text-gray-100 p-1 border-t text-center mb-4">
         <button class="bg-black text-gray-100" id="restart-btn">Restart Test </button>
     </div>  
@@ -273,16 +274,21 @@ function processTypedCharacter(typedChar) {
     return;
   }
 
-  // Highlight Next Character
-  spans[currentCharIndex].classList.add('underline', 'decoration-2', 'decoration-indigo-500', 'text-white');
+  if (currentCharIndex < spans.length) {
+      const nextSpan = spans[currentCharIndex];
+      nextSpan.classList.add('underline', 'decoration-2', 'decoration-indigo-500', 'text-white');
+      
+      // Gently keep the active word in the middle of the screen on mobile
+      nextSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
 
 // --- EVENT LISTENERS ---
 
 if (container) {
-  container.addEventListener('click', () => {
+  container.addEventListener('click', (e) => {
     if (mobileInput && isTestActive) {
-      mobileInput.focus();
+      mobileInput.focus({ preventScroll: true });
     }
   });
 }
