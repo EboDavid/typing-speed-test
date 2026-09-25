@@ -54,13 +54,13 @@
 
     <!-- Fixed position prevents screen jumping on mobile soft keyboards -->
     <input 
-      type="text" 
-      id="mobile-input" 
-      class="fixed top-0 left-0 opacity-0 w-full h-12 pointer-events-none text-base z-0" 
-      autocomplete="off" 
-      autocorrect="off" 
-      autocapitalize="off" 
-      spellcheck="false" 
+    type="text" 
+    id="mobile-input" 
+    class="absolute top-0 left-0 opacity-0 w-full h-full pointer-events-none text-base z-0" 
+    autocomplete="off" 
+    autocorrect="off" 
+    autocapitalize="off" 
+    spellcheck="false" 
     />
 
     <div class="text-gray-100 p-1 border-t text-center mb-4">
@@ -279,7 +279,7 @@ function processTypedCharacter(typedChar) {
       nextSpan.classList.add('underline', 'decoration-2', 'decoration-indigo-500', 'text-white');
       
       // Gently keep the active word in the middle of the screen on mobile
-      nextSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      nextSpan.scrollIntoView({ behavior: 'instant', block: 'nearest' });
     }
 }
 
